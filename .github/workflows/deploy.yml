@@ -38,6 +38,30 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
+      - name: Validate EC2 host
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$EC2_HOST" ]; then
+            echo "::error::EC2_HOST secret is empty"
+            exit 1
+          fi
+
+          if [[ "$EC2_HOST" == *"://"* || "$EC2_HOST" == *":"* ]]; then
+            echo "::error::EC2_HOST must contain only a public IP address or hostname, no protocol or port"
+            exit 1
+          fi
+
+          echo "Testing TCP connectivity to EC2 on port 22..."
+          timeout 10 bash -c "</dev/tcp/$EC2_HOST/22" || {
+            echo "::error::Cannot reach $EC2_HOST on TCP port 22. Check EC2 public IP, security group, route table, NACL, and ssh service."
+            exit 1
+          }
+
+          echo "EC2 host is reachable on port 22."
+
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
         with:
