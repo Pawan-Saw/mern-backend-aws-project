@@ -1,3 +1,5 @@
 ﻿node_modules/
 .env
-mern-kp.pem
+*.pem
+logs/
+ecosystem.config.js
